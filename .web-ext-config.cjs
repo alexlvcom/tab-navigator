@@ -1,7 +1,10 @@
 module.exports = {
-    sourceDir: "src",
-    artifactsDir: "dist",
-    build: {
-        overwriteDest: true
-    }
+  sourceDir: "src",
+  artifactsDir: "web-ext-artifacts",
+  build: {
+    overwriteDest: true
+  },
+  sign: {
+    channel: "listed"
+  }
 };

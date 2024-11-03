@@ -12,7 +12,7 @@ Firefox extension for navigating through tab history using keyboard shortcuts.
 ## Installation
 
 ### From Firefox Add-ons
-[Add link to your Firefox Add-ons page once published]
+https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/
 
 ### Manual Installation (Development)
 1. Clone this repository

@@ -1,0 +1,8 @@
+{
+  "name": "tab-navigator",
+  "version": "1.0.0",
+  "description": "Firefox extension for navigating through tab history using keyboard shortcuts",
+  "license": "MIT",
+  "author": "Alex LV <alex@alexlv.com>",
+  "homepage": "https://github.com/alexlvcom/tab-navigator"
+}

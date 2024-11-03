@@ -5,10 +5,11 @@
   "description": "Navigate through tab history using keyboard shortcuts. Press Ctrl+Alt+Left to go back and Ctrl+Alt+Right to go forward through your previously visited tabs.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "alex@alexlv.com",
+      "id": "tab-navigator-ext@alexlv.com",
       "strict_min_version": "58.0"
     }
   },
+  "license": "MIT",
   "permissions": [
     "tabs",
     "storage"
