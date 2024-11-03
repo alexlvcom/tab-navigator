@@ -1,0 +1,33 @@
+{
+  "manifest_version": 2,
+  "name": "Tab Navigator",
+  "version": "1.0.0",
+  "description": "Navigate through tab history using keyboard shortcuts. Press Ctrl+Alt+Left to go back and Ctrl+Alt+Right to go forward through your previously visited tabs.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "alex@alexlv.com",
+      "strict_min_version": "58.0"
+    }
+  },
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "commands": {
+    "navigate-back": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+Left"
+      },
+      "description": "Navigate to previous tab in history"
+    },
+    "navigate-forward": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+Right"
+      },
+      "description": "Navigate to next tab in history"
+    }
+  }
+}

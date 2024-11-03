@@ -1,0 +1,17 @@
+# Build output
+dist/
+web-ext-artifacts/
+
+# Node modules
+node_modules/
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Extension specific
+.amo-upload-uuid
