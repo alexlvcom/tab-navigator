@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Navigator",
+  "version": "1.0.1",
+  "description": "Navigate through tab history using keyboard shortcuts.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "commands": {
+    "navigate-back": {
+      "suggested_key": {
+        "default": "Ctrl+Left"
+      },
+      "description": "Navigate to previous tab in history"
+    },
+    "navigate-forward": {
+      "suggested_key": {
+        "default": "Ctrl+Right"
+      },
+      "description": "Navigate to next tab in history"
+    }
+  }
+}
