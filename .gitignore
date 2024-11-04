@@ -15,3 +15,10 @@ Thumbs.db
 
 # Extension specific
 .amo-upload-uuid
+
+.env
+*.zip
+*.xpi
+
+package-lock.json
+scripts/

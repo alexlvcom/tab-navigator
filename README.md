@@ -1,45 +1,82 @@
 # Tab Navigator
 
-Firefox extension for navigating through tab history using keyboard shortcuts.
+Browser extension for navigating through tab history using keyboard shortcuts.
 
 ## Features
 
-- Navigate back through previously visited tabs using Ctrl+Alt+Left
-- Navigate forward using Ctrl+Alt+Right
-- History persists between browser sessions
+- Cross-browser support (Firefox and Chrome)
+- Navigate through previously visited tabs using keyboard shortcuts
+- History persists between browser sessions (Correctly works only in Firefox for now)
 - Lightweight with minimal permissions
+
+### Keyboard Shortcuts
+- Firefox: `Ctrl+Alt+Left/Right` to navigate back/forward
+- Chrome: `Ctrl+Left/Right` to navigate back/forward (as Chrome doesn't support `Ctrl+Alt` combination)
 
 ## Installation
 
-### From Firefox Add-ons
-https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/
+### Firefox
+Install from Firefox Add-ons: https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/
 
-### Manual Installation (Development)
-1. Clone this repository
-2. Install dependencies:
-   ```bash
-   npm install --global web-ext
-   ```
-3. Build the extension:
-   ```bash
-   web-ext build
-   ```
-4. Load in Firefox Developer Edition:
+Load in Firefox Developer Edition (only after building the package in Development section):
    - Go to `about:debugging`
    - Click "This Firefox"
    - Click "Load Temporary Add-on"
-   - Select `manifest.json` from the `src` directory
+   - Select `manifest.json` from the `dist/firefox` directory
+
+### Chrome
+*Coming soon to Chrome Web Store*
+
+For now, you can install it manually (only after building the package in Development section):
+1. Download the latest Chrome release from [Releases](https://github.com/alexlvcom/tab-navigator/releases)
+2. Go to `chrome://extensions/`
+3. Enable "Developer mode" in the top right
+4. Click "Load unpacked"
+5. Select the unzipped extension directory
 
 ## Development
 
-To run in development mode with auto-reload:
+### Prerequisites
 ```bash
-web-ext run
+npm install
 ```
 
-To create a signed package:
+### Build
+Build extensions for both browsers:
 ```bash
-web-ext sign --channel=listed --api-key=YOUR_API_KEY --api-secret=YOUR_API_SECRET
+npm run build
+```
+
+Or build for specific browser:
+```bash
+npm run build:firefox
+npm run build:chrome
+```
+
+### Testing
+
+#### Firefox
+```bash
+npx web-ext run --source-dir dist/firefox
+```
+
+#### Chrome
+1. Go to `chrome://extensions/`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `dist/chrome` directory
+
+
+## Project Structure
+```
+project/
+├── manifests/
+│   ├── chrome.json    # Chrome-specific manifest
+│   └── firefox.json   # Firefox-specific manifest
+├── src/
+│   └── background.js  # Shared background script
+├── build.js
+└── package.json
 ```
 
 ## Privacy

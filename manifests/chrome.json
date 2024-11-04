@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Navigator",
+  "version": "1.1.0",
+  "description": "Navigate tabs with keyboard shortcuts: Ctrl+Left to go back, Ctrl+Right to go forward.",
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "commands": {
+    "navigate-back": {
+      "suggested_key": {
+        "default": "Ctrl+Left"
+      },
+      "description": "Navigate to previous tab in history"
+    },
+    "navigate-forward": {
+      "suggested_key": {
+        "default": "Ctrl+Right"
+      },
+      "description": "Navigate to next tab in history"
+    }
+  }
+}
