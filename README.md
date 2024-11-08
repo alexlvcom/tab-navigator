@@ -18,21 +18,9 @@ Browser extension for navigating through tab history using keyboard shortcuts.
 ### Firefox
 Install from Firefox Add-ons: https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/
 
-Load in Firefox Developer Edition (only after building the package in Development section):
-   - Go to `about:debugging`
-   - Click "This Firefox"
-   - Click "Load Temporary Add-on"
-   - Select `manifest.json` from the `dist/firefox` directory
-
 ### Chrome
-*Coming soon to Chrome Web Store*
+Load from Chrome Web Store: https://chromewebstore.google.com/detail/tab-navigator/cbcmijeggfhmklcmochhjgnhpdgcdblc
 
-For now, you can install it manually (only after building the package in Development section):
-1. Download the latest Chrome release from [Releases](https://github.com/alexlvcom/tab-navigator/releases)
-2. Go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right
-4. Click "Load unpacked"
-5. Select the unzipped extension directory
 
 ## Development
 
