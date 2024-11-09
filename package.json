@@ -1,6 +1,6 @@
 {
   "name": "tab-navigator",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Browser extension for navigating through tab history using keyboard shortcuts",
   "license": "MIT",
   "author": "Alex LV <alex@alexlv.com>",

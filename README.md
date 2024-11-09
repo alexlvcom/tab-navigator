@@ -2,11 +2,13 @@
 
 Browser extension for navigating through tab history using keyboard shortcuts.
 
+![Tab Navigator Logo](assets/tab_navigator_400x300.jpg)
+
 ## Features
 
 - Cross-browser support (Firefox and Chrome)
 - Navigate through previously visited tabs using keyboard shortcuts
-- History persists between browser sessions (Correctly works only in Firefox for now)
+- History persists between browser sessions
 - Lightweight with minimal permissions
 
 ### Keyboard Shortcuts
@@ -15,57 +17,12 @@ Browser extension for navigating through tab history using keyboard shortcuts.
 
 ## Installation
 
-### Firefox
-Install from Firefox Add-ons: https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/
+### Mozilla Firefox
+[Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/)
 
-### Chrome
-Load from Chrome Web Store: https://chromewebstore.google.com/detail/tab-navigator/cbcmijeggfhmklcmochhjgnhpdgcdblc
+### Google Chrome
+[Install from Chrome Web Store](https://chromewebstore.google.com/detail/tab-navigator/cbcmijeggfhmklcmochhjgnhpdgcdblc)
 
-
-## Development
-
-### Prerequisites
-```bash
-npm install
-```
-
-### Build
-Build extensions for both browsers:
-```bash
-npm run build
-```
-
-Or build for specific browser:
-```bash
-npm run build:firefox
-npm run build:chrome
-```
-
-### Testing
-
-#### Firefox
-```bash
-npx web-ext run --source-dir dist/firefox
-```
-
-#### Chrome
-1. Go to `chrome://extensions/`
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select the `dist/chrome` directory
-
-
-## Project Structure
-```
-project/
-├── manifests/
-│   ├── chrome.json    # Chrome-specific manifest
-│   └── firefox.json   # Firefox-specific manifest
-├── src/
-│   └── background.js  # Shared background script
-├── build.js
-└── package.json
-```
 
 ## Privacy
 
@@ -80,4 +37,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Author
 
-Alex LV (alex@alexlv.com)
+Alex LV ([alex@alexlv.com](mailto:alex@alexlv.com))
