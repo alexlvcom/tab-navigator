@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Tab Navigator",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Navigate through tab history using keyboard shortcuts. Press Ctrl+Alt+Left to go back and Ctrl+Alt+Right to go forward through your previously visited tabs.",
   "browser_specific_settings": {
     "gecko": {
