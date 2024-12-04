@@ -6,7 +6,7 @@ Browser extension for navigating through tab history using keyboard shortcuts.
 
 ## Features
 
-- Cross-browser support (Firefox and Chrome)
+- Cross-browser support (Firefox, Chrome and Microsoft Edge)
 - Navigate through previously visited tabs using keyboard shortcuts
 - History persists even after restarting the browser (works fully correctly in Firefox only)
 - Lightweight with minimal permissions
@@ -20,7 +20,7 @@ Browser extension for navigating through tab history using keyboard shortcuts.
 ### Mozilla Firefox
 [Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/tab-navigator/)
 
-### Google Chrome
+### Google Chrome / Microsoft Edge
 [Install from Chrome Web Store](https://chromewebstore.google.com/detail/tab-navigator/cbcmijeggfhmklcmochhjgnhpdgcdblc)
 
 
