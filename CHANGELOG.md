@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2025-06-04
+
+### Fixed
+
+- Fixed a bug where tab history wasn't maintained after Chrome restarts.
+
 ## [1.1.1] - 2024-11-09
 
 ### Added
@@ -16,7 +22,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Chrome support`
+- Chrome support
 
 ## [1.0.0] - 2024-11-05
 

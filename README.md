@@ -8,7 +8,7 @@ Browser extension for navigating through tab history using keyboard shortcuts.
 
 - Cross-browser support (Firefox, Chrome and Microsoft Edge)
 - Navigate through previously visited tabs using keyboard shortcuts
-- History persists even after restarting the browser (works fully correctly in Firefox only)
+- History persists even after restarting the browser
 - Lightweight with minimal permissions
 
 ### Keyboard Shortcuts

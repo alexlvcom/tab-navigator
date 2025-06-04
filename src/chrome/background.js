@@ -40,6 +40,27 @@ function cleanStartupPattern(tabs, index) {
     return { tabs, index };
 }
 
+// Remove leftover tabs from saved history on startup
+function removeStartupTabs(tabs, index) {
+    if (tabs.length < 3) return { tabs, index };
+
+    const len = tabs.length;
+    const currentTab = tabs[len - 1];
+    const prevTab = tabs[len - 2];
+    const prevPrevTab = tabs[len - 3];
+
+    if (currentTab.url === prevPrevTab.url &&
+        !tabs.slice(0, len - 2).some(tab => tab.url === prevTab.url)) {
+        console.log('Detected and removing startup tabs from saved state');
+        return {
+            tabs: tabs.slice(0, -2),
+            index: Math.min(index, len - 3)
+        };
+    }
+
+    return { tabs, index };
+}
+
 async function saveHistory() {
     try {
         // Clean up startup pattern if present
