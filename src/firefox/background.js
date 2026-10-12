@@ -1,181 +1,112 @@
-// Use the Firefox-specific API directly
-const browserAPI = browser;
+let history = [];
+let index = -1;
+let expectedActivation = null;
+let pending = Promise.resolve();
 
-let tabHistory = [];
-let currentHistoryIndex = -1;
-let navigatingThroughHistory = false;
-let initialized = false;
+const tabInfo = tab => ({ id: tab.id, url: tab.url || '', title: tab.title || '' });
 
-// Helper function to get tab info
-async function getTabInfo(tabId) {
-    try {
-        const tab = await browserAPI.tabs.get(tabId);
-        return {
-            id: tab.id,
-            url: tab.url,
-            title: tab.title
-        };
-    } catch (error) {
-        console.error("Error getting tab info:", error);
-        return null;
-    }
+async function save() {
+    await browser.storage.local.set({ tabHistory: history, currentHistoryIndex: index });
 }
 
-// Load saved history when extension starts
-async function loadHistory() {
-    if (initialized) return;
-
-    try {
-        const result = await browserAPI.storage.local.get(['tabHistory', 'currentHistoryIndex']);
-        console.log('Loaded history:', result);
-
-        if (result.tabHistory && result.tabHistory.length > 0) {
-            // Verify existing tabs and update their IDs
-            const existingTabs = await browserAPI.tabs.query({});
-            const urlToTab = new Map(existingTabs.map(tab => [tab.url, tab]));
-
-            // Update tab IDs based on URLs
-            tabHistory = result.tabHistory
-                .map(historyItem => {
-                    const newTab = urlToTab.get(historyItem.url);
-                    return newTab ? {
-                        id: newTab.id,
-                        url: newTab.url,
-                        title: newTab.title
-                    } : null;
-                })
-                .filter(item => item !== null);
-
-            currentHistoryIndex = result.currentHistoryIndex;
-            if (currentHistoryIndex >= tabHistory.length) {
-                currentHistoryIndex = tabHistory.length - 1;
-            }
-        }
-
-        // If history is empty or all tabs were filtered out, initialize with current tab
-        if (tabHistory.length === 0) {
-            const [activeTab] = await browserAPI.tabs.query({active: true, currentWindow: true});
-            if (activeTab) {
-                const tabInfo = await getTabInfo(activeTab.id);
-                if (tabInfo) {
-                    tabHistory = [tabInfo];
-                    currentHistoryIndex = 0;
-                    await saveHistory();
-                }
-            }
-        }
-    } catch (error) {
-        console.error("Error loading history:", error);
-
-        // Initialize with current tab on error
-        const [activeTab] = await browserAPI.tabs.query({active: true, currentWindow: true});
-        if (activeTab) {
-            const tabInfo = await getTabInfo(activeTab.id);
-            if (tabInfo) {
-                tabHistory = [tabInfo];
-                currentHistoryIndex = 0;
-                await saveHistory();
-            }
-        }
+async function restore() {
+    const stored = await browser.storage.local.get(['tabHistory', 'currentHistoryIndex']);
+    const openTabs = await browser.tabs.query({ currentWindow: true });
+    const byId = new Map(openTabs.map(tab => [tab.id, tab]));
+    const byUrl = new Map();
+    for (const tab of openTabs) {
+        if (tab.url && !byUrl.has(tab.url)) byUrl.set(tab.url, tab);
     }
-
-    initialized = true;
-    console.log('Initialization complete:', {tabHistory, currentHistoryIndex});
+    const oldHistory = Array.isArray(stored.tabHistory) ? stored.tabHistory : [];
+    const oldIndex = Number.isInteger(stored.currentHistoryIndex) ? stored.currentHistoryIndex : oldHistory.length - 1;
+    let restoredIndex = -1;
+    history = [];
+    for (let i = 0; i < oldHistory.length; i++) {
+        const item = oldHistory[i];
+        const tab = typeof item === 'number' ? byId.get(item) :
+            item && typeof item === 'object' ? byId.get(item.id) || byUrl.get(item.url) : null;
+        if (!tab) continue;
+        history.push(tabInfo(tab));
+        if (i <= oldIndex) restoredIndex = history.length - 1;
+    }
+    index = restoredIndex;
+    const active = openTabs.find(tab => tab.active);
+    if (active && (index < 0 || history[index]?.id !== active.id)) {
+        history = history.slice(0, index + 1);
+        history.push(tabInfo(active));
+        index = history.length - 1;
+    }
+    await save();
 }
 
-// Save history to storage
-async function saveHistory() {
-    try {
-        const data = {
-            tabHistory,
-            currentHistoryIndex
-        };
-        await browserAPI.storage.local.set(data);
-        console.log('Saved history:', data);
-    } catch (error) {
-        console.error("Error saving history:", error);
-    }
+const ready = restore().catch(error => console.error('Cannot restore tab history:', error));
+function enqueue(work) {
+    pending = pending.then(() => ready).then(work).catch(error => console.error('Tab Navigator:', error));
+    return pending;
 }
 
-// Listen for tab activation
-browserAPI.tabs.onActivated.addListener(async (activeInfo) => {
-    await loadHistory();
-
-    if (!navigatingThroughHistory) {
-        const tabInfo = await getTabInfo(activeInfo.tabId);
-        if (!tabInfo) return;
-
-        // Truncate future history if we're not at the end
-        if (currentHistoryIndex < tabHistory.length - 1) {
-            tabHistory = tabHistory.slice(0, currentHistoryIndex + 1);
-        }
-
-        // Only add to history if it's a different URL
-        const lastTab = tabHistory[tabHistory.length - 1];
-        if (!lastTab || lastTab.url !== tabInfo.url) {
-            tabHistory.push(tabInfo);
-            currentHistoryIndex = tabHistory.length - 1;
-            await saveHistory();
-        }
+browser.tabs.onActivated.addListener(info => enqueue(async () => {
+    if (info.tabId === expectedActivation) {
+        expectedActivation = null;
+        return;
     }
+    const tab = await browser.tabs.get(info.tabId);
+    if (history[index]?.id === tab.id) return;
+    history = history.slice(0, index + 1);
+    history.push(tabInfo(tab));
+    index = history.length - 1;
+    await save();
+}));
+
+browser.tabs.onUpdated.addListener((tabId, changes, tab) => {
+    if (!changes.url && !changes.title) return;
+    enqueue(async () => {
+        let changed = false;
+        for (const item of history) {
+            if (item.id !== tabId) continue;
+            item.url = tab.url || '';
+            item.title = tab.title || '';
+            changed = true;
+        }
+        if (changed) await save();
+    });
 });
 
-// Listen for tab URL changes
-browserAPI.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.url) {
-        const currentTab = tabHistory[currentHistoryIndex];
-        if (currentTab && currentTab.id === tabId) {
-            currentTab.url = tab.url;
-            currentTab.title = tab.title;
-            await saveHistory();
+browser.tabs.onRemoved.addListener(tabId => enqueue(async () => {
+    const before = history.slice(0, index + 1).filter(item => item.id !== tabId).length;
+    const remaining = history.filter(item => item.id !== tabId);
+    if (remaining.length === history.length) return;
+    history = remaining;
+    index = Math.min(before - 1, history.length - 1);
+    await save();
+}));
+
+browser.commands.onCommand.addListener(command => enqueue(async () => {
+    const direction = command === 'navigate-back' ? -1 : command === 'navigate-forward' ? 1 : 0;
+    if (!direction) return;
+    const openTabs = await browser.tabs.query({ currentWindow: true });
+    const byId = new Map(openTabs.map(tab => [tab.id, tab]));
+    const byUrl = new Map();
+    for (const tab of openTabs) {
+        if (tab.url && !byUrl.has(tab.url)) byUrl.set(tab.url, tab);
+    }
+    for (let next = index + direction; next >= 0 && next < history.length; next += direction) {
+        const item = history[next];
+        const tab = byId.get(item.id) || byUrl.get(item.url);
+        if (!tab) continue;
+        expectedActivation = tab.id;
+        try {
+            await browser.tabs.update(tab.id, { active: true });
+            index = next;
+            history[next] = tabInfo(tab);
+            await save();
+            setTimeout(() => {
+                if (expectedActivation === tab.id) expectedActivation = null;
+            }, 1000);
+            return;
+        } catch (error) {
+            expectedActivation = null;
+            console.error('Cannot activate tab:', error);
         }
     }
-});
-
-// Listen for tab removal
-browserAPI.tabs.onRemoved.addListener(async (tabId) => {
-    const index = tabHistory.findIndex(tab => tab.id === tabId);
-    if (index > -1) {
-        tabHistory = tabHistory.filter(tab => tab.id !== tabId);
-        if (currentHistoryIndex >= index) {
-            currentHistoryIndex = Math.max(0, Math.min(currentHistoryIndex - 1, tabHistory.length - 1));
-        }
-        await saveHistory();
-    }
-});
-
-// Handle keyboard shortcuts
-browserAPI.commands.onCommand.addListener(async (command) => {
-    await loadHistory();
-
-    if (tabHistory.length <= 1) return;
-
-    navigatingThroughHistory = true;
-
-    try {
-        if (command === "navigate-back" && currentHistoryIndex > 0) {
-            currentHistoryIndex--;
-            const targetTab = tabHistory[currentHistoryIndex];
-            console.log('Navigating back to:', targetTab);
-            await browserAPI.tabs.update(targetTab.id, {active: true});
-        } else if (command === "navigate-forward" && currentHistoryIndex < tabHistory.length - 1) {
-            currentHistoryIndex++;
-            const targetTab = tabHistory[currentHistoryIndex];
-            console.log('Navigating forward to:', targetTab);
-            await browserAPI.tabs.update(targetTab.id, {active: true});
-        }
-        await saveHistory();
-    } catch (error) {
-        console.error("Error navigating tab history:", error);
-    }
-
-    setTimeout(() => {
-        navigatingThroughHistory = false;
-    }, 100);
-});
-
-// Listen for extension installation or update
-browserAPI.runtime.onInstalled.addListener(loadHistory);
-
-// Initialize when script loads
-loadHistory();
+}));

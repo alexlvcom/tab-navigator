@@ -1,179 +1,112 @@
-let savedTabs = [];
-let currentIndex = -1;
-let navigatingThroughHistory = false;
-let lastSaveTime = Date.now();
+let history = [];
+let index = -1;
+let expectedActivation = null;
+let pending = Promise.resolve();
 
-function logState(action) {
-    console.log('='.repeat(50));
-    console.log(action, {
-        tabCount: savedTabs.length,
-        currentIndex,
-        tabs: savedTabs.map(t => t.title)
-    });
-    console.log('='.repeat(50));
+const tabInfo = tab => ({ id: tab.id, url: tab.url || '', title: tab.title || '' });
+
+async function save() {
+    await chrome.storage.local.set({ tabs: history, currentIndex: index });
 }
 
-// Function to clean up startup pattern
-function cleanStartupPattern(tabs, index) {
-    if (tabs.length < 3) return { tabs, index };
+async function restore() {
+    const stored = await chrome.storage.local.get(['tabs', 'currentIndex']);
+    const openTabs = (await chrome.tabs.query({ currentWindow: true })).filter(tab => !tab.pinned);
+    const byId = new Map(openTabs.map(tab => [tab.id, tab]));
+    const byUrl = new Map();
+    for (const tab of openTabs) {
+        if (tab.url && !byUrl.has(tab.url)) byUrl.set(tab.url, tab);
+    }
+    const oldHistory = Array.isArray(stored.tabs) ? stored.tabs : [];
+    const oldIndex = Number.isInteger(stored.currentIndex) ? stored.currentIndex : oldHistory.length - 1;
+    let restoredIndex = -1;
+    history = [];
+    for (let i = 0; i < oldHistory.length; i++) {
+        const item = oldHistory[i];
+        if (!item || typeof item !== 'object') continue;
+        const tab = byId.get(item.id) || byUrl.get(item.url);
+        if (!tab) continue;
+        history.push(tabInfo(tab));
+        if (i <= oldIndex) restoredIndex = history.length - 1;
+    }
+    index = restoredIndex;
+    const active = openTabs.find(tab => tab.active);
+    if (active && (index < 0 || history[index]?.id !== active.id)) {
+        history = history.slice(0, index + 1);
+        history.push(tabInfo(active));
+        index = history.length - 1;
+    }
+    await save();
+}
 
-    // Check if this might be a startup scenario (more than 5 seconds since last save)
-    const isStartupScenario = (Date.now() - lastSaveTime) > 5000;
+const ready = restore().catch(error => console.error('Cannot restore tab history:', error));
+function enqueue(work) {
+    pending = pending.then(() => ready).then(work).catch(error => console.error('Tab Navigator:', error));
+    return pending;
+}
 
-    if (isStartupScenario) {
-        const len = tabs.length;
-        const currentTab = tabs[len - 1];
-        const prevTab = tabs[len - 2];
-        const prevPrevTab = tabs[len - 3];
+chrome.tabs.onActivated.addListener(info => enqueue(async () => {
+    if (info.tabId === expectedActivation) {
+        expectedActivation = null;
+        return;
+    }
+    const tab = await chrome.tabs.get(info.tabId);
+    if (tab.pinned || history[index]?.id === tab.id) return;
+    history = history.slice(0, index + 1);
+    history.push(tabInfo(tab));
+    index = history.length - 1;
+    await save();
+}));
 
-        // Check if current tab matches prev-prev tab and prev tab doesn't exist in earlier history
-        if (currentTab.url === prevPrevTab.url &&
-            !tabs.slice(0, len - 2).some(tab => tab.url === prevTab.url)) {
-            console.log('Detected and removing startup pattern');
-            return {
-                tabs: tabs.slice(0, -2),
-                index: Math.min(index, tabs.length - 3)
-            };
+chrome.tabs.onUpdated.addListener((tabId, changes, tab) => {
+    if (!changes.url && !changes.title) return;
+    enqueue(async () => {
+        let changed = false;
+        for (const item of history) {
+            if (item.id !== tabId) continue;
+            item.url = tab.url || '';
+            item.title = tab.title || '';
+            changed = true;
         }
-    }
-
-    return { tabs, index };
-}
-
-async function saveHistory() {
-    try {
-        // Clean up startup pattern if present
-        const cleaned = cleanStartupPattern(savedTabs, currentIndex);
-        savedTabs = cleaned.tabs;
-        currentIndex = cleaned.index;
-
-        await chrome.storage.local.set({
-            tabs: savedTabs,
-            currentIndex
-        });
-        lastSaveTime = Date.now();
-        logState('State saved');
-    } catch (error) {
-        console.error('Error saving history:', error);
-    }
-}
-
-// Rest of the code stays the same...
-
-async function loadHistory() {
-    try {
-        const result = await chrome.storage.local.get(['tabs', 'currentIndex']);
-        console.log('Loading saved state:', result);
-
-        if (result.tabs?.length > 0) {
-            // Clean startup tabs first
-            const cleaned = removeStartupTabs(result.tabs, result.currentIndex);
-            savedTabs = cleaned.tabs;
-            currentIndex = cleaned.index;
-
-            // Map current tabs
-            const currentTabs = await chrome.tabs.query({ currentWindow: true });
-            const urlToTab = new Map(
-                currentTabs
-                    .filter(tab => !tab.pinned)
-                    .map(tab => [tab.url, tab])
-            );
-
-            // Update tab IDs
-            savedTabs = savedTabs.map(oldTab => {
-                const newTab = urlToTab.get(oldTab.url);
-                return newTab ? {
-                    ...oldTab,
-                    id: newTab.id
-                } : oldTab;
-            });
-
-            logState('Restored state');
-        } else {
-            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (activeTab && !activeTab.pinned) {
-                savedTabs = [{
-                    id: activeTab.id,
-                    url: activeTab.url,
-                    title: activeTab.title
-                }];
-                currentIndex = 0;
-            }
-        }
-        await saveHistory();
-    } catch (error) {
-        console.error('Error loading history:', error);
-    }
-}
-
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    if (navigatingThroughHistory) return;
-
-    const tab = await chrome.tabs.get(activeInfo.tabId);
-    if (tab.pinned) return;
-
-    console.log('Tab activated:', tab.title);
-
-    // Truncate future history
-    if (currentIndex < savedTabs.length - 1) {
-        savedTabs = savedTabs.slice(0, currentIndex + 1);
-    }
-
-    // Add new tab
-    savedTabs.push({
-        id: tab.id,
-        url: tab.url,
-        title: tab.title
+        if (changed) await save();
     });
-    currentIndex = savedTabs.length - 1;
-    await saveHistory();
 });
 
-chrome.commands.onCommand.addListener(async (command) => {
-    if (savedTabs.length <= 1) return;
+chrome.tabs.onRemoved.addListener(tabId => enqueue(async () => {
+    const before = history.slice(0, index + 1).filter(item => item.id !== tabId).length;
+    const remaining = history.filter(item => item.id !== tabId);
+    if (remaining.length === history.length) return;
+    history = remaining;
+    index = Math.min(before - 1, history.length - 1);
+    await save();
+}));
 
-    navigatingThroughHistory = true;
-
-    try {
-        if (command === "navigate-back" && currentIndex > 0) {
-            currentIndex--;
-            const targetTab = savedTabs[currentIndex];
-            console.log('Navigating back to:', targetTab.title);
-
-            const tabs = await chrome.tabs.query({ currentWindow: true });
-            let tab = tabs.find(t => t.id === targetTab.id);
-            if (!tab) {
-                tab = tabs.find(t => t.url === targetTab.url && t.id !== targetTab.id);
-            }
-            if (tab) {
-                await chrome.tabs.update(tab.id, { active: true });
-                savedTabs[currentIndex].id = tab.id;
-                await saveHistory();
-            }
-        } else if (command === "navigate-forward" && currentIndex < savedTabs.length - 1) {
-            currentIndex++;
-            const targetTab = savedTabs[currentIndex];
-            console.log('Navigating forward to:', targetTab.title);
-
-            const tabs = await chrome.tabs.query({ currentWindow: true });
-            let tab = tabs.find(t => t.id === targetTab.id);
-            if (!tab) {
-                tab = tabs.find(t => t.url === targetTab.url && t.id !== targetTab.id);
-            }
-            if (tab) {
-                await chrome.tabs.update(tab.id, { active: true });
-                savedTabs[currentIndex].id = tab.id;
-                await saveHistory();
-            }
-        }
-    } catch (error) {
-        console.error('Error navigating:', error);
+chrome.commands.onCommand.addListener(command => enqueue(async () => {
+    const direction = command === 'navigate-back' ? -1 : command === 'navigate-forward' ? 1 : 0;
+    if (!direction) return;
+    const openTabs = (await chrome.tabs.query({ currentWindow: true })).filter(tab => !tab.pinned);
+    const byId = new Map(openTabs.map(tab => [tab.id, tab]));
+    const byUrl = new Map();
+    for (const tab of openTabs) {
+        if (tab.url && !byUrl.has(tab.url)) byUrl.set(tab.url, tab);
     }
-
-    setTimeout(() => {
-        navigatingThroughHistory = false;
-    }, 100);
-});
-
-// Initialize
-loadHistory();
+    for (let next = index + direction; next >= 0 && next < history.length; next += direction) {
+        const item = history[next];
+        const tab = byId.get(item.id) || byUrl.get(item.url);
+        if (!tab) continue;
+        expectedActivation = tab.id;
+        try {
+            await chrome.tabs.update(tab.id, { active: true });
+            index = next;
+            history[next] = tabInfo(tab);
+            await save();
+            setTimeout(() => {
+                if (expectedActivation === tab.id) expectedActivation = null;
+            }, 1000);
+            return;
+        } catch (error) {
+            expectedActivation = null;
+            console.error('Cannot activate tab:', error);
+        }
+    }
+}));

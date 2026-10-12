@@ -1,11 +1,12 @@
 {
   "name": "tab-navigator",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Browser extension for navigating through tab history using keyboard shortcuts",
   "license": "MIT",
   "author": "Alex LV <alex@alexlv.com>",
   "homepage": "https://github.com/alexlvcom/tab-navigator",
   "scripts": {
+    "test": "node --test tests/*.test.js",
     "build:firefox": "node build.js firefox",
     "build:chrome": "node build.js chrome",
     "build": "npm run build:firefox && npm run build:chrome",
