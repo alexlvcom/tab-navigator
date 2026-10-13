@@ -50,6 +50,40 @@ npm run build
 
 Browser packages are written to `web-ext-artifacts/`. The tests cover restored tab IDs, closed tabs, and separate tabs sharing a URL.
 
+## Releasing
+
+`npm run release` publishes the version in `package.json` to Firefox Add-ons, the Chrome Web Store and GitHub Releases. It runs the tests, builds both packages, and skips any store that already has the version.
+
+1. Bump the version in `package.json`, `src/firefox/manifest.json` and `src/chrome/manifest.json`.
+2. Add a `## [x.y.z]` section to `CHANGELOG.md`. Its bullets, except the Tests subsection, become the Firefox version notes and the GitHub release notes. Firefox reviewer notes come from `release/amo-reviewer-notes.txt`.
+3. Commit and push to `origin/master`.
+4. Run `npm run release:dry-run` to preview, then `npm run release`.
+5. Run `npm run release:status` to see each store's review state.
+
+Single stores: `node release/publish.js firefox`, `chrome` or `github`.
+
+Credentials live outside the repo in `~/.config/tab-navigator/.env`:
+
+```sh
+AMO_JWT_ISSUER=user:...           # https://addons.mozilla.org/en-US/developers/addon/api/key/
+AMO_JWT_SECRET=...
+CWS_PUBLISHER_ID=...              # Chrome Web Store dashboard URL, or Settings
+CWS_EXTENSION_ID=cbcmijeggfhmklcmochhjgnhpdgcdblc
+```
+
+The Chrome service account key goes next to it as `~/.config/tab-navigator/chrome-service-account.json`. Set `CWS_SERVICE_ACCOUNT_KEY` to use another path.
+
+To create the Chrome key: in a Google Cloud project, enable the Chrome Web Store API, create a service account without roles, and download a JSON key for it. Then add the service account's email in the Chrome Web Store dashboard under **Settings** → **Service account**. GitHub releases use the `gh` CLI login.
+
+Firefox versions must be signed with `--channel=listed` to appear on the public Add-ons page. The release script always does this. Versions 1.0.1, 1.0.2 and 1.1.1 went to the unlisted channel, so the public page stayed on 1.0.0 until 1.1.2.
+
+### Store review times
+
+| Version | Store | Submitted (UTC) | Approved (UTC) | Wait |
+|---|---|---|---|---|
+| 1.1.2 | Firefox Add-ons (listed) | 2026-10-13 11:12 | 2026-10-13 11:16 | about 5 minutes, automatic review |
+| 1.1.2 | Chrome Web Store | 2026-10-13 12:07 | pending | |
+
 
 ## Privacy
 

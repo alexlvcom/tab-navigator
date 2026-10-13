@@ -10,7 +10,9 @@
     "build:firefox": "node build.js firefox",
     "build:chrome": "node build.js chrome",
     "build": "npm run build:firefox && npm run build:chrome",
-    "sign:firefox": "node scripts/sign-firefox.js"
+    "release": "node release/publish.js",
+    "release:status": "node release/publish.js --status",
+    "release:dry-run": "node release/publish.js --dry-run"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",

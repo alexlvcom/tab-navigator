@@ -1,0 +1,1 @@
+No build tooling, bundling or minification. The package contains plain background.js and manifest.json copied from src/firefox/ in https://github.com/alexlvcom/tab-navigator (tag {version}). Permissions: tabs (track active tab history), storage (persist history across restarts). No network requests.
