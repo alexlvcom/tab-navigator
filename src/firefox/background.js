@@ -11,7 +11,8 @@ async function save() {
 
 async function restore() {
     const stored = await browser.storage.local.get(['tabHistory', 'currentHistoryIndex']);
-    const openTabs = await browser.tabs.query({ currentWindow: true });
+    // The current window of the background page is the last focused one. Keep history entries from every window.
+    const openTabs = await browser.tabs.query({});
     const byId = new Map(openTabs.map(tab => [tab.id, tab]));
     const byUrl = new Map();
     for (const tab of openTabs) {
@@ -30,7 +31,7 @@ async function restore() {
         if (i <= oldIndex) restoredIndex = history.length - 1;
     }
     index = restoredIndex;
-    const active = openTabs.find(tab => tab.active);
+    const [active] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
     if (active && (index < 0 || history[index]?.id !== active.id)) {
         history = history.slice(0, index + 1);
         history.push(tabInfo(active));

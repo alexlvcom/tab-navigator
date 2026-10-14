@@ -11,7 +11,9 @@ async function save() {
 
 async function restore() {
     const stored = await chrome.storage.local.get(['tabs', 'currentIndex']);
-    const openTabs = (await chrome.tabs.query({ currentWindow: true })).filter(tab => !tab.pinned);
+    // The service worker restarts after being idle, and its current window is then the last focused one,
+    // which may be a popup or another window. Keep history entries from every window.
+    const openTabs = (await chrome.tabs.query({})).filter(tab => !tab.pinned);
     const byId = new Map(openTabs.map(tab => [tab.id, tab]));
     const byUrl = new Map();
     for (const tab of openTabs) {
@@ -30,8 +32,8 @@ async function restore() {
         if (i <= oldIndex) restoredIndex = history.length - 1;
     }
     index = restoredIndex;
-    const active = openTabs.find(tab => tab.active);
-    if (active && (index < 0 || history[index]?.id !== active.id)) {
+    const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (active && !active.pinned && (index < 0 || history[index]?.id !== active.id)) {
         history = history.slice(0, index + 1);
         history.push(tabInfo(active));
         index = history.length - 1;

@@ -4,9 +4,11 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-async function launch(browserName, tabs, saved) {
+async function launch(browserName, tabs, saved, options = {}) {
     const listeners = {};
     const storage = structuredClone(saved);
+    let focusedWindow = 1;
+    const inWindow = (tab, filter) => !(filter.currentWindow || filter.lastFocusedWindow) || (tab.windowId ?? 1) === focusedWindow;
     const events = name => ({ addListener(fn) { listeners[name] = fn; } });
     const api = {
         storage: { local: {
@@ -14,10 +16,15 @@ async function launch(browserName, tabs, saved) {
             async set(value) { Object.assign(storage, structuredClone(value)); }
         } },
         tabs: {
-            async query() { return tabs.map(tab => ({ ...tab })); },
+            async query(filter = {}) {
+                return tabs
+                    .filter(tab => inWindow(tab, filter) && (filter.active === undefined || tab.active === filter.active))
+                    .map(tab => ({ windowId: 1, ...tab }));
+            },
             async get(id) { return { ...tabs.find(tab => tab.id === id) }; },
             async update(id) {
-                for (const tab of tabs) tab.active = tab.id === id;
+                const windowId = tabs.find(tab => tab.id === id).windowId ?? 1;
+                for (const tab of tabs) if ((tab.windowId ?? 1) === windowId) tab.active = tab.id === id;
                 listeners.activated({ tabId: id });
             },
             onActivated: events('activated'),
@@ -27,11 +34,15 @@ async function launch(browserName, tabs, saved) {
         commands: { onCommand: events('command') }
     };
     const source = fs.readFileSync(path.join(__dirname, '..', 'src', browserName, 'background.js'), 'utf8');
+    if (options.focusedWindow) focusedWindow = options.focusedWindow;
     vm.runInNewContext(source, { [browserName === 'chrome' ? 'chrome' : 'browser']: api, console, setTimeout });
     await new Promise(resolve => setImmediate(resolve));
     return {
         storage,
         tabs,
+        focus(windowId) {
+            focusedWindow = windowId;
+        },
         async activate(id) {
             for (const tab of tabs) tab.active = tab.id === id;
             await listeners.activated({ tabId: id });
@@ -89,5 +100,23 @@ for (const browser of ['chrome', 'firefox']) {
         await app.activate(22);
         await app.command('navigate-back');
         assert.equal(tabs.find(tab => tab.active).id, 11);
+    });
+
+    test(`${browser}: restart keeps tabs from windows without focus`, async () => {
+        const tabs = [
+            { id: 11, url: 'https://a.test/', title: 'A', active: false, windowId: 1 },
+            { id: 22, url: 'https://b.test/', title: 'B', active: true, windowId: 1 },
+            { id: 33, url: 'https://popup.test/', title: 'Popup', active: true, windowId: 2 }
+        ];
+        const saved = {
+            [historyKey]: tabs.map(tab => ({ id: tab.id, url: tab.url })),
+            [indexKey]: 2
+        };
+        const app = await launch(browser, tabs, saved, { focusedWindow: 2 });
+        assert.deepEqual(app.storage[historyKey].map(item => item.id), [11, 22, 33]);
+        await app.remove(33);
+        app.focus(1);
+        await app.command('navigate-back');
+        assert.equal(tabs.find(tab => tab.windowId === 1 && tab.active).id, 11);
     });
 }

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-10-14
+
+### Fixed
+
+- Keep Chrome tab history when the background service worker restarts while another window has focus, such as a popup or a second browser window. History entries from other windows were dropped, so back and forward stopped working after a few hours.
+- Keep history entries from every window when Firefox restores history at startup.
+
+### Tests
+
+- Add a browser API test for a restart while another window has focus.
+
 ## [1.1.2] - 2026-10-12
 
 ### Fixed
