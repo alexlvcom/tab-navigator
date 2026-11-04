@@ -11,3 +11,9 @@ When asked to publish, release or ship the latest version to the stores, follow 
 5. Run `npm run release:status`, then add a row for each store to the **Store review times** table in `README.md`. Fill in the approval time once a store approves.
 
 Never sign Firefox versions without `--channel=listed`. Never copy credentials from `~/.config/tab-navigator/` into the repo.
+
+## Third-Party Accounts And Setups
+
+When adding, changing, or removing a third-party service, integration, account, project, billing arrangement, or provider setup for this project, update the private AlexLV app directory in the same task. Update the relevant app entry's `details.third_party` in `public/apps.json` and the matching section in `public/docs/third-party-accounts.md`. For a project without an app card, update the inventory document without adding a card unless requested. Include the provider, purpose, environment, project or account identity, and relevant billing details when known. Remove or correct obsolete details and distinguish confirmed facts from information that could not be verified. Never put passwords, API keys, tokens, private keys, or other secrets in the directory, Git, or logs.
+
+The directory checkout is `~/sites/alexlv.com` on the home PC or `~/source/alexlvcom` on the work laptop. Follow its `AGENTS.md`, deploy changes to the configured DEV site, and verify the updated protected page and document before reporting the task complete. Include the directory repository in the session's final Git sweep.
