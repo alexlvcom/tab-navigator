@@ -1,5 +1,13 @@
 # Agent instructions
 
+## Start From The Latest Code
+
+- Before any change, run `git fetch --tags` and `git pull --ff-only` on the working branch and build on top of the result. Other machines and agent sessions push commits, tags, and releases, so never edit, build, version, install, or deploy a stale checkout.
+- Choose a new version only after comparing it with the latest remote tags and releases; never reuse a released version or build one older than the published release.
+- Fetch again before building, installing, committing, or pushing. If the remote moved, pull and rebuild first.
+- If the pull cannot fast-forward, stop and report it. Do not continue on old code, and do not force-push.
+- Shared standard: "Start From The Latest Code" in the AlexLV app standards (`docs/windows-apps-common-standards.md` and `docs/mobile-apps-common-standards.md` in alexlv.com).
+
 ## Publishing a release
 
 When asked to publish, release or ship the latest version to the stores, follow the **Releasing** section of `README.md`:
