@@ -1,5 +1,11 @@
 # Agent instructions
 
+## Requests That Belong To Another Project
+
+- Before acting on a request or screenshot, compare the app or product it refers to with the current session's project. Use the session and repository context to identify the current project. A screenshot may show a different app even when its title displays the current repository.
+- If the request appears to belong to another app or project, tell the user which app it appears to belong to. Ask whether they meant to send it in that project's session or explicitly want you to handle it from this chat. Wait for their answer before changing, building, testing, deploying, or otherwise starting that work in either project. Naming or showing the other app alone does not confirm a switch.
+- Proceed when the user explicitly confirms the target and that they want the work done from this session. Repositories that are documented parts of the same app, such as its mobile client and backend, are within the same project when the task calls for both.
+
 ## Start From The Latest Code
 
 - Before any change, run `git fetch --tags` and `git pull --ff-only` on the working branch and build on top of the result. Other machines and agent sessions push commits, tags, and releases, so never edit, build, version, install, or deploy a stale checkout.
